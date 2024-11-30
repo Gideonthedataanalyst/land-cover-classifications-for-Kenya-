@@ -1,0 +1,102 @@
+// Load a global dataset (MODIS Land Cover)
+var dataset = ee.ImageCollection('MODIS/006/MCD12Q1')
+                .filterDate('2016-01-01', '2016-12-31')
+                .first();
+
+// Load Kenya boundary as a feature collection
+var countries = ee.FeatureCollection('USDOS/LSIB_SIMPLE/2017');
+var kenya = countries.filter(ee.Filter.eq('country_na', 'Kenya'));
+
+// Clip the dataset to Kenya
+var kenyaDataset = dataset.select('LC_Type1').clip(kenya);
+
+// Define visualization parameters
+var visParams = {
+  min: 1,
+  max: 17,
+  palette: [
+    '05450a', '086a10', '54a708', '78d203', '009900', 'c6b044',
+    'dcd159', 'dade48', 'fbff13', 'b6ff05', '27ff87', 'c24f44',
+    'a5a5a5', 'ff6d4c', '69fff8', 'f9ffa4', '1c0dff'
+  ]
+};
+
+// Add the dataset to the map with visualization
+Map.addLayer(kenyaDataset, visParams, 'Kenya Land Cover');
+
+// Add the Kenya boundary to the map
+Map.addLayer(kenya, {color: 'red'}, 'Kenya Boundary');
+
+// Set basemap and center map on Kenya
+Map.setOptions('TERRAIN');
+Map.centerObject(kenya, 6);
+
+// IGBP Classification codes and descriptions
+var igbpClasses = [
+  {code: 1, description: 'Evergreen Needleleaf Forest', color: '05450a'},
+  {code: 2, description: 'Evergreen Broadleaf Forest', color: '086a10'},
+  {code: 3, description: 'Deciduous Needleleaf Forest', color: '54a708'},
+  {code: 4, description: 'Deciduous Broadleaf Forest', color: '78d203'},
+  {code: 5, description: 'Mixed Forest', color: '009900'},
+  {code: 6, description: 'Closed Shrublands', color: 'c6b044'},
+  {code: 7, description: 'Open Shrublands', color: 'dcd159'},
+  {code: 8, description: 'Woody Savannas', color: 'dade48'},
+  {code: 9, description: 'Savannas', color: 'fbff13'},
+  {code: 10, description: 'Grasslands', color: 'b6ff05'},
+  {code: 11, description: 'Permanent Wetlands', color: '27ff87'},
+  {code: 12, description: 'Croplands', color: 'c24f44'},
+  {code: 13, description: 'Urban and Built-up Lands', color: 'a5a5a5'},
+  {code: 14, description: 'Cropland/Natural Vegetation Mosaics', color: 'ff6d4c'},
+  {code: 15, description: 'Snow and Ice', color: '69fff8'},
+  {code: 16, description: 'Barren or Sparsely Vegetated', color: 'f9ffa4'},
+  {code: 17, description: 'Water Bodies', color: '1c0dff'}
+];
+
+// Create the legend panel
+var legend = ui.Panel({
+  style: {
+    position: 'bottom-right',
+    padding: '8px',
+    backgroundColor: 'white'
+  }
+});
+
+// Add legend title
+legend.add(ui.Label({
+  value: 'IGBP Land Cover Legend',
+  style: {
+    fontWeight: 'bold',
+    fontSize: '14px',
+    margin: '0 0 4px 0',
+    padding: '0'
+  }
+}));
+
+// Create and add legend entries
+igbpClasses.forEach(function(classItem) {
+  var colorBox = ui.Label({
+    style: {
+      backgroundColor: classItem.color,
+      padding: '8px',
+      margin: '0 8px 4px 0',
+      border: '1px solid black'
+    }
+  });
+
+  var description = ui.Label({
+    value: classItem.description,
+    style: {
+      margin: '0 0 4px 0'
+    }
+  });
+
+  var legendItem = ui.Panel({
+    widgets: [colorBox, description],
+    layout: ui.Panel.Layout.Flow('horizontal')
+  });
+
+  legend.add(legendItem);
+});
+
+// Add legend to the map
+Map.add(legend);
